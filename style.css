@@ -1,0 +1,567 @@
+/* ==========================================================================
+   adyhb — design tokens
+   ========================================================================== */
+
+:root {
+  /* surfaces */
+  --bg-0: #14120e;
+  --bg-1: #1b1812;
+  --bg-1-alpha: rgba(27, 24, 18, 0.78);
+  --line: rgba(234, 230, 219, 0.10);
+  --line-strong: rgba(234, 230, 219, 0.16);
+
+  /* ink */
+  --ink-0: #f1ece0;
+  --ink-1: #b9b2a1;
+  --ink-2: #7d7666;
+
+  /* accent — warm candle amber */
+  --accent: #e2a24c;
+  --accent-strong: #f0b563;
+  --accent-soft: rgba(226, 162, 76, 0.16);
+
+  /* paper palette for sticky notes */
+  --paper-cream: #f4ecd9;
+  --paper-cream-ink: #4a3f2c;
+  --paper-sage: #dbe4cd;
+  --paper-sage-ink: #3c4630;
+  --paper-sky: #d3e3ec;
+  --paper-sky-ink: #2f4250;
+  --paper-blush: #f2dbdd;
+  --paper-blush-ink: #55302f;
+  --paper-lilac: #e2d7ec;
+  --paper-lilac-ink: #402f52;
+
+  /* type */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-note: 'Caveat', cursive;
+
+  /* motion */
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 150ms;
+  --dur-med: 260ms;
+  --dur-slow: 420ms;
+
+  /* misc */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-note: 0 14px 26px rgba(0, 0, 0, 0.32), 0 3px 8px rgba(0, 0, 0, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-med: 0ms;
+    --dur-slow: 0ms;
+  }
+}
+
+/* ==========================================================================
+   Reset & base
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg-0);
+  color: var(--ink-0);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button, input, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+svg {
+  display: block;
+}
+
+/* ==========================================================================
+   App shell
+   ========================================================================== */
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg-0);
+}
+
+#grid-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+
+#app.is-dragging #grid-canvas {
+  cursor: grabbing;
+}
+
+#cursor-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 640px;
+  height: 640px;
+  margin-left: -320px;
+  margin-top: -320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-soft) 0%, rgba(226, 162, 76, 0) 70%);
+  pointer-events: none;
+  will-change: transform;
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-smooth);
+}
+
+#cursor-glow.is-visible {
+  opacity: 1;
+}
+
+#world-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* ==========================================================================
+   Floating UI
+   ========================================================================== */
+
+.ui-topleft,
+.ui-topright,
+.ui-bottomleft,
+.ui-bottomright {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.ui-topleft { top: 28px; left: 32px; }
+.ui-topright { top: 28px; right: 32px; }
+.ui-bottomleft { bottom: 26px; left: 32px; }
+.ui-bottomright { bottom: 26px; right: 32px; }
+
+.ui-topleft > *,
+.ui-topright > *,
+.ui-bottomleft > *,
+.ui-bottomright > * {
+  pointer-events: auto;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+  color: var(--ink-0);
+  user-select: none;
+}
+
+.coords {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--ink-1);
+  background: var(--bg-1-alpha);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  transition: color var(--dur-fast) var(--ease-smooth),
+              border-color var(--dur-fast) var(--ease-smooth),
+              transform var(--dur-fast) var(--ease-smooth);
+}
+
+.icon-btn:hover {
+  color: var(--accent-strong);
+  border-color: var(--line-strong);
+}
+
+.icon-btn:active {
+  transform: scale(0.94);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: background var(--dur-fast) var(--ease-smooth),
+              color var(--dur-fast) var(--ease-smooth),
+              border-color var(--dur-fast) var(--ease-smooth),
+              transform var(--dur-fast) var(--ease-smooth);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #201503;
+}
+
+.btn-primary:hover {
+  background: var(--accent-strong);
+}
+
+.btn-ghost {
+  background: var(--bg-1-alpha);
+  border: 1px solid var(--line);
+  color: var(--ink-1);
+  backdrop-filter: blur(8px);
+}
+
+.btn-ghost:hover {
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+
+.btn-small {
+  padding: 8px 14px;
+  font-size: 0.78rem;
+}
+
+/* ==========================================================================
+   Sticky notes
+   ========================================================================== */
+
+.sticky-note {
+  position: absolute;
+  width: 220px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.sticky-note-surface {
+  padding: 20px 20px 18px;
+  border-radius: var(--radius-md) var(--radius-md) 6px var(--radius-md);
+  box-shadow: var(--shadow-note);
+  cursor: pointer;
+  transform: scale(0.82) rotate(var(--note-rot, 0deg));
+  opacity: 0;
+  transition: transform var(--dur-fast) var(--ease-smooth),
+              box-shadow var(--dur-fast) var(--ease-smooth);
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sticky-note.is-in .sticky-note-surface {
+  opacity: 1;
+  transform: scale(1) rotate(var(--note-rot, 0deg));
+  transition: transform var(--dur-slow) var(--ease-smooth),
+              opacity var(--dur-slow) var(--ease-smooth),
+              box-shadow var(--dur-fast) var(--ease-smooth);
+}
+
+.sticky-note-surface:hover {
+  transform: scale(1.035) rotate(var(--note-rot, 0deg));
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.26);
+}
+
+.sticky-note-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.sticky-note-message {
+  margin: 0;
+  font-family: var(--font-note);
+  font-weight: 500;
+  font-size: 1.32rem;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* paper variants */
+.paper-cream { background: var(--paper-cream); color: var(--paper-cream-ink); }
+.paper-sage  { background: var(--paper-sage);  color: var(--paper-sage-ink); }
+.paper-sky   { background: var(--paper-sky);   color: var(--paper-sky-ink); }
+.paper-blush { background: var(--paper-blush); color: var(--paper-blush-ink); }
+.paper-lilac { background: var(--paper-lilac); color: var(--paper-lilac-ink); }
+
+/* ==========================================================================
+   Modals
+   ========================================================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 9, 6, 0.55);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity var(--dur-med) var(--ease-smooth);
+}
+
+.modal-overlay[hidden] {
+  display: flex;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.modal-overlay.is-open {
+  opacity: 1;
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 32px 30px 28px;
+  box-shadow: var(--shadow-soft);
+  transform: translateY(10px) scale(0.97);
+  opacity: 0;
+  transition: transform var(--dur-med) var(--ease-smooth),
+              opacity var(--dur-med) var(--ease-smooth);
+}
+
+.modal-overlay.is-open .modal {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--ink-2);
+  transition: color var(--dur-fast) var(--ease-smooth), background var(--dur-fast) var(--ease-smooth);
+}
+
+.modal-close:hover {
+  color: var(--ink-0);
+  background: var(--line);
+}
+
+.modal-heading {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--ink-0);
+  padding-right: 20px;
+}
+
+.field {
+  margin-bottom: 18px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-1);
+  letter-spacing: 0.02em;
+}
+
+.field-optional {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-0);
+  font-size: 0.94rem;
+  resize: vertical;
+  transition: border-color var(--dur-fast) var(--ease-smooth);
+}
+
+textarea {
+  min-height: 96px;
+  line-height: 1.5;
+  font-family: var(--font-body);
+}
+
+input[type="text"]::placeholder,
+textarea::placeholder {
+  color: var(--ink-2);
+}
+
+input[type="text"]:focus,
+textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.color-swatches {
+  display: flex;
+  gap: 10px;
+}
+
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  transition: transform var(--dur-fast) var(--ease-smooth), border-color var(--dur-fast) var(--ease-smooth);
+}
+
+.swatch:hover {
+  transform: scale(1.08);
+}
+
+.swatch[aria-checked="true"] {
+  border-color: var(--accent);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.note-view-message {
+  font-family: var(--font-note);
+  font-size: 1.4rem;
+  line-height: 1.4;
+  color: var(--ink-0);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.modal-help {
+  max-width: 380px;
+}
+
+.help-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.help-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink-1);
+}
+
+.help-list strong {
+  color: var(--ink-0);
+  font-weight: 600;
+}
+
+.help-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .ui-topleft { top: 18px; left: 18px; }
+  .ui-topright { top: 18px; right: 18px; }
+  .ui-bottomleft { bottom: 16px; left: 18px; }
+  .ui-bottomright { bottom: 16px; right: 18px; }
+
+  .brand { font-size: 1.15rem; }
+  .coords { font-size: 0.7rem; }
+
+  .btn-small span { display: none; }
+
+  .modal {
+    padding: 26px 20px 22px;
+  }
+
+  .sticky-note {
+    width: 190px;
+  }
+
+  .modal-heading {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .ui-bottomright .btn-small {
+    padding: 8px 10px;
+  }
+}
